@@ -1,0 +1,44 @@
+# =============================================================================
+# Configuration Prometheus
+# =============================================================================
+# Prometheus "scrape" (collecte) les metriques de chaque target
+# a intervalle regulier. Chaque target expose un endpoint /metrics.
+# =============================================================================
+
+global:
+  # Intervalle de scraping par defaut (toutes les 15 secondes)
+  scrape_interval: 15s
+  # Timeout si la target ne repond pas
+  scrape_timeout: 10s
+  # Intervalle d'evaluation des regles d'alerte
+  evaluation_interval: 15s
+
+# =============================================================================
+# Targets a scraper
+# =============================================================================
+scrape_configs:
+
+  # --- Prometheus se scrape lui-meme (self-monitoring) ---
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # --- Application Flask : metriques custom ---
+  # Scrape les metriques exposees sur /metrics par prometheus_client
+  - job_name: "flask-app"
+    # L'app est accessible via le nom du service Docker Compose
+    static_configs:
+      - targets: ["app:5000"]
+        labels:
+          app: "monitoring-demo"
+          env: "local"
+    # Scraper plus souvent l'app pour avoir des donnees fines
+    scrape_interval: 5s
+
+  # --- Node Exporter : metriques systeme ---
+  # CPU, RAM, disque, reseau de la machine hote
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          instance: "docker-host"
