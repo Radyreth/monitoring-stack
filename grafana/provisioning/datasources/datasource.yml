@@ -1,0 +1,17 @@
+# =============================================================================
+# Provisioning automatique de la datasource Grafana
+# =============================================================================
+# Ce fichier configure Prometheus comme source de donnees au demarrage.
+# Pas besoin de le faire manuellement dans l'interface Grafana.
+# =============================================================================
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    # URL interne Docker : Grafana accede a Prometheus via le reseau Docker
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
