@@ -1,0 +1,76 @@
+# =============================================================================
+# Validation CI : verifie que la stack est valide a chaque push
+# =============================================================================
+
+name: Validate Stack
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ---- Valider la syntaxe du docker-compose ----
+  validate-compose:
+    name: "Validate Docker Compose"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose syntax
+        run: docker compose config --quiet
+
+  # ---- Lint de l'app Python ----
+  lint:
+    name: "Lint Python"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Run flake8
+        run: flake8 app/ --max-line-length=120
+
+  # ---- Valider les configs Prometheus et Grafana ----
+  validate-configs:
+    name: "Validate configs"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Valider que le YAML Prometheus est syntaxiquement correct
+      - name: Validate Prometheus config
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/prometheus:/etc/prometheus \
+            prom/prometheus:latest \
+            promtool check config /etc/prometheus/prometheus.yml
+
+      # Valider que le JSON du dashboard est valide
+      - name: Validate Grafana dashboard JSON
+        run: python3 -c "import json; json.load(open('grafana/provisioning/dashboards/dashboard.json'))"
+
+  # ---- Build de l'image Flask ----
+  build:
+    name: "Build Flask app"
+    runs-on: ubuntu-latest
+    needs: [validate-compose, lint, validate-configs]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t monitoring-app:test ./app
+
+      - name: Verify image runs
+        run: |
+          docker run -d --name test-app -p 5000:5000 monitoring-app:test
+          sleep 3
+          curl -f http://localhost:5000/health || exit 1
+          docker stop test-app
