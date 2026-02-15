@@ -6,9 +6,9 @@
 # =============================================================================
 
 global:
-  # Intervalle de scraping par defaut (toutes les 15 secondes)
+  # Intervalle de scraping par defaut
   scrape_interval: 15s
-  # Timeout si la target ne repond pas
+  # Timeout si la target ne repond pas (doit etre < scrape_interval)
   scrape_timeout: 10s
   # Intervalle d'evaluation des regles d'alerte
   evaluation_interval: 15s
