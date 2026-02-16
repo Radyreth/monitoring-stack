@@ -1,0 +1,39 @@
+# =============================================================================
+# Prometheus Alerting Rules
+# =============================================================================
+# Regles d'alerte declenchees automatiquement quand les conditions sont remplies.
+# En production, ces alertes seraient envoyees via Alertmanager (Slack, email, etc.)
+# =============================================================================
+
+groups:
+  - name: app_alerts
+    rules:
+      # Alerte si la latence P95 depasse 1 seconde pendant 5 minutes
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected"
+          description: "P95 latency is above 1s for 5 minutes"
+
+      # Alerte si le taux d'erreur depasse 5% pendant 2 minutes
+      - alert: HighErrorRate
+        expr: (sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for 2 minutes"
+
+      # Alerte si une target est down pendant 1 minute
+      - alert: TargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Target {{ $labels.instance }} is down"
+          description: "{{ $labels.job }} target has been down for 1 minute"

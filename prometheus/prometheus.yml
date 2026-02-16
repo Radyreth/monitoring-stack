@@ -13,6 +13,10 @@ global:
   # Intervalle d'evaluation des regles d'alerte
   evaluation_interval: 15s
 
+# Charger les regles d'alerte depuis le fichier alerts.yml
+rule_files:
+  - "alerts.yml"
+
 # =============================================================================
 # Targets a scraper
 # =============================================================================
